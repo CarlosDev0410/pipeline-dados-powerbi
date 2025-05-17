@@ -9,7 +9,7 @@ from
 select
 N.dtemissao as DATA_FATURAMENTO,
 PV.DTPEDIDOVENDA AS DATA_PEDIDO,
-coalesce(p.nome, pvt.descricao) as parceiro,
+COALESCE(p.nome, pvt.descricao, 'VENDA DIRETA') AS parceiro,
 MG.NOME AS GRUPO_MATERIAL,
 M.IDENTIFICACAO,
 M.NOME,
@@ -80,7 +80,7 @@ group by 1, 2, 3, 4, 5, 6, 10,nfpi.qtde,nfpi.valorunitario,nfpi.valordesconto, 1
 union
 select V.dtvenda as DATA_FATURAMENTO,
 PV.DTPEDIDOVENDA AS DATA_PEDIDO,
-coalesce(p.nome, pvt.descricao) as parceiro,
+COALESCE(p.nome, pvt.descricao, 'VENDA DIRETA') AS parceiro,
 MG.NOME AS GRUPO_MATERIAL,
 M.IDENTIFICACAO,
 M.NOME,
