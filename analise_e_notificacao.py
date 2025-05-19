@@ -16,7 +16,7 @@ def get_postgres_engine():
 
 def coletar_dados_resumo():
     engine = get_postgres_engine()
-    data_hoje = date.today().strftime("%#m/%#d/%Y")
+    data_hoje = date.today().strftime("%m/%d/%Y")
 
     faturamento_query = text("""
         SELECT COUNT(DISTINCT nota) as pedidos, SUM(valor) as total
@@ -35,25 +35,28 @@ def coletar_dados_resumo():
     return faturamento.iloc[0], devolucao.iloc[0]
 
 def enviar_email(resumo):
+    from email.utils import formataddr
+
     remetente = os.getenv("EMAIL_FROM")
+    smtp_user = os.getenv("EMAIL_SMTP_USER")  # novo campo
     senha = os.getenv("EMAIL_PASS")
-    destinatario = os.getenv("EMAIL_TO")
+    destinatarios = os.getenv("EMAIL_TO").split(",")  # transforma em lista
     smtp_host = os.getenv("EMAIL_SMTP", "smtp-relay.brevo.com")
     smtp_port = int(os.getenv("EMAIL_PORT", 587))
 
     msg = MIMEMultipart()
-    msg['From'] = remetente
-    msg['To'] = destinatario
+    msg['From'] = formataddr(("Temperare Relatórios", remetente))
+    msg['To'] = ", ".join(destinatarios)
     msg['Subject'] = f"Resumo Diário do ETL - {date.today().strftime('%d/%m/%Y')}"
 
     msg.attach(MIMEText(resumo, 'plain'))
 
     with smtplib.SMTP(smtp_host, smtp_port) as servidor:
         servidor.starttls()
-        servidor.login(remetente, senha)
-        servidor.send_message(msg)
+        servidor.login(smtp_user, senha)
+        servidor.sendmail(remetente, destinatarios, msg.as_string())
 
-    print("📧 Email de resumo enviado com sucesso.")
+    print("📧 Email enviado com sucesso.")
 
 def run_analise():
     faturamento, devolucao = coletar_dados_resumo()
