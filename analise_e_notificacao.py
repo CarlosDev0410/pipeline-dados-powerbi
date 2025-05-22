@@ -19,12 +19,12 @@ def coletar_dados_resumo():
     data_hoje = date.today().strftime("%m/%d/%Y")
 
     faturamento_query = text("""
-        SELECT COUNT(DISTINCT nota) as pedidos, SUM(valor) as total
+        SELECT COUNT(DISTINCT nota) as pedidos, SUM(valor+frete+outras_despesas) as total
         FROM faturamento
         WHERE TO_CHAR(data_faturamento, 'MM/DD/YYYY') = :data
     """)
     devolucao_query = text("""
-        SELECT COUNT(DISTINCT nota) as pedidos, SUM(valor) as total
+        SELECT COUNT(DISTINCT nota) as pedidos, SUM(valor+frete) as total
         FROM devolucao
         WHERE TO_CHAR(dtemissao, 'MM/DD/YYYY') = :data
     """)
