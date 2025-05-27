@@ -4,7 +4,7 @@ from etl_devolucao import run_etl_devolucao
 from analise_e_notificacao import run_analise
 
 def main():
-    print("🔄 Iniciando processo completo de ETL...")
+    print("🔄 Iniciando processo...")
 
     try:
         print("\n▶️ Etapa 1: Faturamento")
