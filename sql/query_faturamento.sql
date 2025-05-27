@@ -182,7 +182,7 @@ from
 			and pvt.cdpedidovendatipo = 100)
 	where
 		1 = 1
-		and data_faturamento BETWEEN :data_inicio AND :data_fim
+		and N.dtemissao BETWEEN :data_inicio AND :data_fim
 		and NFPI.valorunitario > 0
 		and N.cdnotastatus in (10, 11)
 		and ((NFP.cdnaturezaoperacao in (15, 29, 30, 124, 685))
