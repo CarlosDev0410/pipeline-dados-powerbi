@@ -25,13 +25,13 @@ def fetch_dados_estoque():
 
 def insert_estoque(df, engine):
     if df.empty:
-        print("Nenhum dado de devolução encontrado.")
+        print("Nenhum dado de estoque encontrado.")
         return
-    df.to_sql("estoque", con=engine, index=False, if_exists="append", method="multi")
-    print(f"{len(df)} registros de devolução inseridos.")
+    df.to_sql("estoque", con=engine, index=False, if_exists="replace", method="multi")
+    print(f"{len(df)} registros de estoque inseridos (tabela sobrescrita).")
 
 def run_etl_estoque():
-    print("🔹 Iniciando ETL de devoluções...")
+    print("🔹 Iniciando ETL de Estoque...")
     engine_dest = get_postgres_engine_dest()
     df = fetch_dados_estoque()
     insert_estoque(df, engine_dest)

@@ -29,18 +29,39 @@ def coletar_dados_resumo():
         WHERE TO_CHAR(dtemissao, 'MM/DD/YYYY') = :data
     """)
 
+    estoque_queries = {
+        "RJ": "CD RJ - JD OLIMPO",
+        "RJ_PENDENCIA": "CD RJ - JO PENDENCIA",
+        "ES": "CD ES - MERCOCAMP",
+        "ES_PENDENCIA": "CD ES - MC PENDENCIA",
+        "FULL": "CD - MELI SP (FULFILLMENT)",
+        "MG": "CD MG - ORMIFRIO"
+    }
+
+    estoque_resumo = {}
+    for chave, local in estoque_queries.items():
+        query = text("""
+            SELECT
+                SUM(quantidade_disponivel) AS qtde_total,
+                SUM(valor_total) AS valor_total
+            FROM estoque
+            WHERE local_armazenagem = :local
+        """)
+        df = pd.read_sql_query(query, engine, params={"local": local})
+        estoque_resumo[chave] = df.iloc[0]
+
     faturamento = pd.read_sql_query(faturamento_query, engine, params={"data": data_hoje})
     devolucao = pd.read_sql_query(devolucao_query, engine, params={"data": data_hoje})
 
-    return faturamento.iloc[0], devolucao.iloc[0]
+    return faturamento.iloc[0], devolucao.iloc[0], estoque_resumo
 
 def enviar_email(resumo):
     from email.utils import formataddr
 
     remetente = os.getenv("EMAIL_FROM")
-    smtp_user = os.getenv("EMAIL_SMTP_USER")  # novo campo
+    smtp_user = os.getenv("EMAIL_SMTP_USER")
     senha = os.getenv("EMAIL_PASS")
-    destinatarios = os.getenv("EMAIL_TO").split(",")  # transforma em lista
+    destinatarios = os.getenv("EMAIL_TO").split(",")
     smtp_host = os.getenv("EMAIL_SMTP", "smtp-relay.brevo.com")
     smtp_port = int(os.getenv("EMAIL_PORT", 587))
 
@@ -59,7 +80,7 @@ def enviar_email(resumo):
     print("📧 Email enviado com sucesso.")
 
 def run_analise():
-    faturamento, devolucao = coletar_dados_resumo()
+    faturamento, devolucao, estoque_resumo = coletar_dados_resumo()
 
     texto = f"""
 ✅ RESUMO DIÁRIO DOS PEDIDOS - {date.today().strftime('%d/%m/%Y')}
@@ -72,9 +93,15 @@ DEVOLUÇÕES:
 - Pedidos devolvidos: {devolucao['pedidos'] or 0}
 - Valor total devolvido: R$ {devolucao['total'] or 0:,.2f}
 
-Pipeline executado com sucesso.
+ESTOQUE POR LOCAL:
 """
+    for chave, dados in estoque_resumo.items():
+        texto += f"- {chave}: {dados['qtde_total'] or 0:.0f} unidades | R$ {dados['valor_total'] or 0:,.2f}\n"
+
+    texto += "\nPipeline executado com sucesso."
 
     print(texto)
     enviar_email(texto)
 
+if __name__ == "__main__":
+    run_analise()
