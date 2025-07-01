@@ -34,6 +34,7 @@ SELECT
     F.nome AS FABRICANTE,
     FP.nome AS FORMA_PAGAMENTO,
     PP.nome AS PRAZO_PAGAMENTO,
+    NFP.numeropedido as ID_PEDIDO,
     CASE
         WHEN N.cdempresa = 3 THEN 'TEMPERARE'
         WHEN N.cdempresa = 11531 THEN 'TEMPERARE EQUIPAMENTOS'
@@ -65,13 +66,14 @@ LEFT JOIN VENDAVALORCAMPOEXTRA VCE ON VCE.cdvenda = V.cdvenda AND VCE.cdcampoext
 )
 LEFT JOIN PEDIDOVENDATIPO PVT ON PVT.cdpedidovendatipo = V.cdpedidovendatipo AND PVT.cdpedidovendatipo = 100
 WHERE
-    N.dtemissao = :dataref
+    N.dtemissao = '07/01/2025'
     AND NFPI.valorunitario > 0
     AND N.cdnotastatus IN (10, 11)
     AND N.cdprojeto IS NULL
     AND NFP.cdnaturezaoperacao = 19
 GROUP BY
-    1, 2, 3, 4, 5, 6, 10, 11, 14, 15, 18, 19, 20, 21, 22, 23, 24, 25, NFP.outrasdespesas
+    1, 2, 3, 4, 5, 6, 10, 11, 14, 15, 18, 19, 20, 21, 22, 23, 24, 25, 26, NFP.outrasdespesas
+
 UNION
 
 SELECT
@@ -110,6 +112,7 @@ SELECT
     F.nome AS FABRICANTE,
     FP.nome AS FORMA_PAGAMENTO,
     PP.nome AS PRAZO_PAGAMENTO,
+    NFP.numeropedido AS ID_PEDIDO,
     CASE
         WHEN N.cdempresa = 3 THEN 'TEMPERARE'
         WHEN N.cdempresa = 11531 THEN 'TEMPERARE EQUIPAMENTOS'
@@ -141,11 +144,11 @@ LEFT JOIN VENDAVALORCAMPOEXTRA VCE ON VCE.cdvenda = V.cdvenda AND VCE.cdcampoext
 )
 LEFT JOIN PEDIDOVENDATIPO PVT ON PVT.cdpedidovendatipo = V.cdpedidovendatipo AND PVT.cdpedidovendatipo = 100
 WHERE
-    N.dtemissao = :dataref
+    N.dtemissao = '07/01/2025'
     AND NFPI.valorunitario > 0
     AND N.cdnotastatus IN (10, 11)
     AND N.cdprojeto <> 34
     AND NFP.cdnaturezaoperacao = 19
 GROUP BY
-    1, 2, 3, 4, 5, 6, 10, 11, 14, 15, 18, 19, 20, 21, 22, 23, 24, 25, NFP.outrasdespesas
+    1, 2, 3, 4, 5, 6, 10, 11, 14, 15, 18, 19, 20, 21, 22, 23, 24, 25, 26, NFP.outrasdespesas
 ORDER BY 1, 9 DESC;
