@@ -1,4 +1,4 @@
-import os
+""import os
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -8,6 +8,9 @@ from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 
 load_dotenv()
+
+import locale
+locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 
 def get_postgres_engine():
     return create_engine(
@@ -87,26 +90,26 @@ def run_analise():
 
 FATURAMENTO:
 - Pedidos faturados: {faturamento['pedidos'] or 0}
-- Valor total bruto: R$ {faturamento['total'] or 0:,.2f}
+- Valor total bruto: {locale.currency(faturamento['total'] or 0, grouping=True)}
 
 DEVOLUÇÕES:
 - Pedidos devolvidos: {devolucao['pedidos'] or 0}
-- Valor total devolvido: R$ {devolucao['total'] or 0:,.2f}
+- Valor total devolvido: {locale.currency(devolucao['total'] or 0, grouping=True)}
 
 Estoque regular:
 """
     for chave in ["RJ", "ES", "MG"]:
         dados = estoque_resumo.get(chave)
-        texto += f"- {chave}: {dados['qtde_total'] or 0:.0f} unidades | R$ {dados['valor_total'] or 0:,.2f}\n"
+        texto += f"- {chave}: {dados['qtde_total'] or 0:.0f} unidades | {locale.currency(dados['valor_total'] or 0, grouping=True)}\n"
 
     texto += "\nEstoque Pendência:\n"
     for chave in ["RJ_PENDENCIA", "ES_PENDENCIA"]:
         dados = estoque_resumo.get(chave)
-        texto += f"- {chave}: {dados['qtde_total'] or 0:.0f} unidades | R$ {dados['valor_total'] or 0:,.2f}\n"
+        texto += f"- {chave}: {dados['qtde_total'] or 0:.0f} unidades | {locale.currency(dados['valor_total'] or 0, grouping=True)}\n"
 
     texto += "\nEstoque Fulfillment:\n"
     dados = estoque_resumo.get("FULL")
-    texto += f"- FULL: {dados['qtde_total'] or 0:.0f} unidades | R$ {dados['valor_total'] or 0:,.2f}\n"
+    texto += f"- FULL: {dados['qtde_total'] or 0:.0f} unidades | {locale.currency(dados['valor_total'] or 0, grouping=True)}\n"
 
     texto += "\nPipeline executado com sucesso."
 
