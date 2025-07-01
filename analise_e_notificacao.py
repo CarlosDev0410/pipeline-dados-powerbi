@@ -33,12 +33,12 @@ def coletar_dados_resumo():
     """)
 
     estoque_queries = {
-        "RJ": "CD RJ - JD OLIMPO",
-        "MG": "CD MG - ORMIFRIO",
-        "ES": "CD ES - MERCOCAMP",
-        "FULL": "CD - MELI SP (FULFILLMENT)",
-        "RJ_PENDENCIA": "CD RJ - JO PENDENCIA",
-        "ES_PENDENCIA": "CD ES - MC PENDENCIA",
+        "RJ - JD OLIMPO": "CD RJ - JD OLIMPO",
+        "MG - ORMIFRIO": "CD MG - ORMIFRIO",
+        "ES - MERCOCAMP": "CD ES - MERCOCAMP",
+        "FULL - MELI RJ": "CD - MELI SP (FULFILLMENT)",
+        "RJ - PENDENCIA": "CD RJ - JO PENDENCIA",
+        "ES - PENDENCIA": "CD ES - MC PENDENCIA",
     }
 
     estoque_resumo = {}
@@ -96,20 +96,22 @@ DEVOLUÇÕES:
 - Pedidos devolvidos: {devolucao['pedidos'] or 0}
 - Valor total devolvido: {locale.currency(devolucao['total'] or 0, grouping=True)}
 
-Estoque regular:
+------------------------------------------------------------------
+
+ESTOQUE REGULAR:
 """
-    for chave in ["RJ", "ES", "MG"]:
+    for chave in ["RJ - JD OLIMPO", "ES - MERCOCAMP", "MG - ORMIFRIO"]:
         dados = estoque_resumo.get(chave)
         texto += f"- {chave}: {dados['qtde_total'] or 0:.0f} unidades | {locale.currency(dados['valor_total'] or 0, grouping=True)}\n"
 
-    texto += "\nEstoque Pendência:\n"
-    for chave in ["RJ_PENDENCIA", "ES_PENDENCIA"]:
+    texto += "\nESTOQUE PENDÊNCIAS:\n"
+    for chave in ["RJ - PENDENCIA", "ES - PENDENCIA"]:
         dados = estoque_resumo.get(chave)
         texto += f"- {chave}: {dados['qtde_total'] or 0:.0f} unidades | {locale.currency(dados['valor_total'] or 0, grouping=True)}\n"
 
-    texto += "\nEstoque Fulfillment:\n"
-    dados = estoque_resumo.get("FULL")
-    texto += f"- FULL: {dados['qtde_total'] or 0:.0f} unidades | {locale.currency(dados['valor_total'] or 0, grouping=True)}\n"
+    texto += "\nESTOQUE FULFILLMENT:\n"
+    dados = estoque_resumo.get("SP - FULL MELI RJ")
+    texto += f"- FULL - MELI RJ: {dados['qtde_total'] or 0:.0f} unidades | {locale.currency(dados['valor_total'] or 0, grouping=True)}\n"
 
     texto += "\nPipeline executado com sucesso."
 
