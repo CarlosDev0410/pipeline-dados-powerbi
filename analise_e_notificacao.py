@@ -31,11 +31,11 @@ def coletar_dados_resumo():
 
     estoque_queries = {
         "RJ": "CD RJ - JD OLIMPO",
-        "RJ_PENDENCIA": "CD RJ - JO PENDENCIA",
+        "MG": "CD MG - ORMIFRIO",
         "ES": "CD ES - MERCOCAMP",
-        "ES_PENDENCIA": "CD ES - MC PENDENCIA",
         "FULL": "CD - MELI SP (FULFILLMENT)",
-        "MG": "CD MG - ORMIFRIO"
+        "RJ_PENDENCIA": "CD RJ - JO PENDENCIA",
+        "ES_PENDENCIA": "CD ES - MC PENDENCIA",
     }
 
     estoque_resumo = {}
@@ -93,10 +93,20 @@ DEVOLUÇÕES:
 - Pedidos devolvidos: {devolucao['pedidos'] or 0}
 - Valor total devolvido: R$ {devolucao['total'] or 0:,.2f}
 
-ESTOQUE POR LOCAL:
+Estoque regular:
 """
-    for chave, dados in estoque_resumo.items():
+    for chave in ["RJ", "ES", "MG"]:
+        dados = estoque_resumo.get(chave)
         texto += f"- {chave}: {dados['qtde_total'] or 0:.0f} unidades | R$ {dados['valor_total'] or 0:,.2f}\n"
+
+    texto += "\nEstoque Pendência:\n"
+    for chave in ["RJ_PENDENCIA", "ES_PENDENCIA"]:
+        dados = estoque_resumo.get(chave)
+        texto += f"- {chave}: {dados['qtde_total'] or 0:.0f} unidades | R$ {dados['valor_total'] or 0:,.2f}\n"
+
+    texto += "\nEstoque Fulfillment:\n"
+    dados = estoque_resumo.get("FULL")
+    texto += f"- FULL: {dados['qtde_total'] or 0:.0f} unidades | R$ {dados['valor_total'] or 0:,.2f}\n"
 
     texto += "\nPipeline executado com sucesso."
 
