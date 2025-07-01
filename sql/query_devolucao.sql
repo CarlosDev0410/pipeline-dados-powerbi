@@ -66,7 +66,7 @@ LEFT JOIN VENDAVALORCAMPOEXTRA VCE ON VCE.cdvenda = V.cdvenda AND VCE.cdcampoext
 )
 LEFT JOIN PEDIDOVENDATIPO PVT ON PVT.cdpedidovendatipo = V.cdpedidovendatipo AND PVT.cdpedidovendatipo = 100
 WHERE
-    N.dtemissao = '07/01/2025'
+    N.dtemissao = :dataref
     AND NFPI.valorunitario > 0
     AND N.cdnotastatus IN (10, 11)
     AND N.cdprojeto IS NULL
@@ -144,7 +144,7 @@ LEFT JOIN VENDAVALORCAMPOEXTRA VCE ON VCE.cdvenda = V.cdvenda AND VCE.cdcampoext
 )
 LEFT JOIN PEDIDOVENDATIPO PVT ON PVT.cdpedidovendatipo = V.cdpedidovendatipo AND PVT.cdpedidovendatipo = 100
 WHERE
-    N.dtemissao = '07/01/2025'
+    N.dtemissao = :dataref
     AND NFPI.valorunitario > 0
     AND N.cdnotastatus IN (10, 11)
     AND N.cdprojeto <> 34
