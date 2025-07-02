@@ -9,8 +9,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-import locale
-locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
+def formatar_reais(valor):
+    return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 def get_postgres_engine():
     return create_engine(
@@ -33,12 +33,12 @@ def coletar_dados_resumo():
     """)
 
     estoque_queries = {
-        "RJ - JD OLIMPO": "CD RJ - JD OLIMPO",
-        "MG - ORMIFRIO": "CD MG - ORMIFRIO",
-        "ES - MERCOCAMP": "CD ES - MERCOCAMP",
-        "FULL - MELI RJ": "CD - MELI SP (FULFILLMENT)",
-        "RJ - PENDENCIA": "CD RJ - JO PENDENCIA",
-        "ES - PENDENCIA": "CD ES - MC PENDENCIA",
+        "CD_RJ": "CD RJ - JD OLIMPO",
+        "CD_MG": "CD MG - ORMIFRIO",
+        "CD_ES": "CD ES - MERCOCAMP",
+        "CD_SP_FULL": "CD - MELI SP (FULFILLMENT)",
+        "CD_RJ_PENDENCIA": "CD RJ - JO PENDENCIA",
+        "CD_ES_PENDENCIA": "CD ES - MC PENDENCIA",
     }
 
     estoque_resumo = {}
@@ -90,28 +90,43 @@ def run_analise():
 
 FATURAMENTO:
 - Pedidos faturados: {faturamento['pedidos'] or 0}
-- Valor total bruto: {locale.currency(faturamento['total'] or 0, grouping=True)}
+- Valor total bruto: {formatar_reais(faturamento['total'] or 0)}
 
 DEVOLUÇÕES:
 - Pedidos devolvidos: {devolucao['pedidos'] or 0}
-- Valor total devolvido: {locale.currency(devolucao['total'] or 0, grouping=True)}
-
-------------------------------------------------------------------
-
-ESTOQUE REGULAR:
+- Valor total devolvido: {formatar_reais(devolucao['total'] or 0)}
+-----------------------------------------------------------------
+Estoque regular:
 """
-    for chave in ["RJ - JD OLIMPO", "ES - MERCOCAMP", "MG - ORMIFRIO"]:
+    total_qtde_regular = 0
+    total_valor_regular = 0
+    for chave in ["CD_RJ", "CD_ES", "CD_MG"]:
         dados = estoque_resumo.get(chave)
-        texto += f"- {chave}: {dados['qtde_total'] or 0:.0f} unidades | {locale.currency(dados['valor_total'] or 0, grouping=True)}\n"
+        qtde = dados['qtde_total'] or 0
+        valor = dados['valor_total'] or 0
+        total_qtde_regular += qtde
+        total_valor_regular += valor
+        texto += f"- {chave}: {qtde:.0f} unidades | {formatar_reais(valor)}\n"
+    texto += f"Total: {total_qtde_regular:.0f} unidades | {formatar_reais(total_valor_regular)}\n"
 
-    texto += "\nESTOQUE PENDÊNCIAS:\n"
-    for chave in ["RJ - PENDENCIA", "ES - PENDENCIA"]:
+    texto += "\nEstoque Pendência:\n"
+    total_qtde_pend = 0
+    total_valor_pend = 0
+    for chave in ["CD_RJ_PENDENCIA", "CD_ES_PENDENCIA"]:
         dados = estoque_resumo.get(chave)
-        texto += f"- {chave}: {dados['qtde_total'] or 0:.0f} unidades | {locale.currency(dados['valor_total'] or 0, grouping=True)}\n"
+        qtde = dados['qtde_total'] or 0
+        valor = dados['valor_total'] or 0
+        total_qtde_pend += qtde
+        total_valor_pend += valor
+        texto += f"- {chave}: {qtde:.0f} unidades | {formatar_reais(valor)}\n"
+    texto += f"Total: {total_qtde_pend:.0f} unidades | {formatar_reais(total_valor_pend)}\n"
 
-    texto += "\nESTOQUE FULFILLMENT:\n"
-    dados = estoque_resumo.get("SP - FULL MELI RJ")
-    texto += f"- FULL - MELI RJ: {dados['qtde_total'] or 0:.0f} unidades | {locale.currency(dados['valor_total'] or 0, grouping=True)}\n"
+    texto += "\nEstoque Fulfillment:\n"
+    dados = estoque_resumo.get("CD_SP_FULL")
+    qtde = dados['qtde_total'] or 0
+    valor = dados['valor_total'] or 0
+    texto += f"- FULL: {qtde:.0f} unidades | {formatar_reais(valor)}\n"
+    texto += f"Total: {qtde:.0f} unidades | {formatar_reais(valor)}\n"
 
     texto += "\nPipeline executado com sucesso."
 
