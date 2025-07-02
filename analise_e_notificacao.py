@@ -10,6 +10,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def formatar_reais(valor):
+    valor = float(valor or 0)
+    valor /= 100  # Corrige escala para exibir como no sistema
     return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 def get_postgres_engine():
@@ -90,12 +92,14 @@ def run_analise():
 
 FATURAMENTO:
 - Pedidos faturados: {faturamento['pedidos'] or 0}
-- Valor total bruto: {formatar_reais(faturamento['total'] or 0)}
+- Valor total bruto: {formatar_reais(faturamento['total'])}
 
 DEVOLUÇÕES:
 - Pedidos devolvidos: {devolucao['pedidos'] or 0}
-- Valor total devolvido: {formatar_reais(devolucao['total'] or 0)}
------------------------------------------------------------------
+- Valor total devolvido: {formatar_reais(devolucao['total'])}
+
+-------------------------------------------------------------
+
 Estoque regular:
 """
     total_qtde_regular = 0
