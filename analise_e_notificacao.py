@@ -92,15 +92,17 @@ def run_analise():
 
 FATURAMENTO:
 - Pedidos faturados: {faturamento['pedidos'] or 0}
-- Valor total bruto: {formatar_reais(faturamento['total'])}
+- Valor total bruto: {faturamento['total']}
 
 DEVOLUÇÕES:
 - Pedidos devolvidos: {devolucao['pedidos'] or 0}
-- Valor total devolvido: {formatar_reais(devolucao['total'])}
+- Valor total devolvido: {devolucao['total']}
 
 -------------------------------------------------------------
 
-Estoque regular:
+✅ RESUMO DIÁRIO DO ESTOQUE - {date.today().strftime('%d/%m/%Y')}
+
+ESTOQUE REGULAR:
 """
     total_qtde_regular = 0
     total_valor_regular = 0
@@ -111,9 +113,18 @@ Estoque regular:
         total_qtde_regular += qtde
         total_valor_regular += valor
         texto += f"- {chave}: {qtde:.0f} unidades | {formatar_reais(valor)}\n"
-    texto += f"Total: {total_qtde_regular:.0f} unidades | {formatar_reais(total_valor_regular)}\n"
 
-    texto += "\nEstoque Pendência:\n"
+    texto += "\nESTOQUE FULFILLMENT:\n"
+    dados = estoque_resumo.get("CD_SP_FULL")
+    qtde_full = dados['qtde_total'] or 0
+    valor_full = dados['valor_total'] or 0
+    texto += f"- FULL MELI RJ: {qtde_full:.0f} unidades | {formatar_reais(valor_full)}\n"
+
+    total_geral_qtde = total_qtde_regular + qtde_full
+    total_geral_valor = total_valor_regular + valor_full
+    texto += f"\n**Total Regular + Fulfillment: {total_geral_qtde:.0f} unidades | {formatar_reais(total_geral_valor)}**\n"
+
+    texto += "\nESTOQUE DE AVARIADOS:\n"
     total_qtde_pend = 0
     total_valor_pend = 0
     for chave in ["CD_RJ_PENDENCIA", "CD_ES_PENDENCIA"]:
@@ -123,16 +134,8 @@ Estoque regular:
         total_qtde_pend += qtde
         total_valor_pend += valor
         texto += f"- {chave}: {qtde:.0f} unidades | {formatar_reais(valor)}\n"
-    texto += f"Total: {total_qtde_pend:.0f} unidades | {formatar_reais(total_valor_pend)}\n"
 
-    texto += "\nEstoque Fulfillment:\n"
-    dados = estoque_resumo.get("CD_SP_FULL")
-    qtde = dados['qtde_total'] or 0
-    valor = dados['valor_total'] or 0
-    texto += f"- FULL: {qtde:.0f} unidades | {formatar_reais(valor)}\n"
-    texto += f"Total: {qtde:.0f} unidades | {formatar_reais(valor)}\n"
-
-    texto += "\nPipeline executado com sucesso."
+    texto += f"\n**Total em Pendências: {total_qtde_pend:.0f} unidades | {formatar_reais(total_valor_pend)}**\n" 
 
     print(texto)
     enviar_email(texto)
