@@ -127,7 +127,7 @@ def run_analise():
 
     total_geral_qtde = total_qtde_regular + qtde_full
     total_geral_valor = total_valor_regular + valor_full
-    html += f"<br><b>Total Regular + Fulfillment: {total_geral_qtde:.0f} unidades | {formatar_reais(total_geral_valor)}</b></p>"
+    html += f"<br><b style='color: #0009FF;'>Total Regular + Fulfillment: {total_geral_qtde:.0f} unidades | {formatar_reais(total_geral_valor)}</b></p>"
 
     html += "<p><strong>ESTOQUE DE AVARIADOS:</strong><br>"
     total_qtde_pend = 0
@@ -140,9 +140,9 @@ def run_analise():
         total_valor_pend += valor
         html += f"- {chave}: {qtde:.0f} unidades | {formatar_reais(valor)}<br>"
 
-    html += f"<br><b>Total em Pendências: {total_qtde_pend:.0f} unidades | {formatar_reais(total_valor_pend)}</b></p>"
+    html += f"<br><b style='color: #0009FF;'>Total em Pendências: {total_qtde_pend:.0f} unidades | {formatar_reais(total_valor_pend)}</b></p>"
 
-    html += "<p><em>Pipeline executado com sucesso.</em></p></body></html>"
+    html += "<p><em>Pipeline executado com sucesso. Version 1.09</em></p></body></html>"
 
     print(html)
     enviar_email(html)
