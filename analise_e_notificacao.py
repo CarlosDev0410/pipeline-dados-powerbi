@@ -14,6 +14,10 @@ def formatar_reais(valor):
     valor /= 100  # Corrige escala para exibir como no sistema
     return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
+def formatar_reais_direto(valor):
+    valor = float(valor or 0)
+    return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
 def get_postgres_engine():
     return create_engine(
         f"postgresql+psycopg2://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASS')}@{os.getenv('POSTGRES_HOST')}:{os.getenv('POSTGRES_PORT')}/{os.getenv('POSTGRES_DB')}"
@@ -60,7 +64,7 @@ def coletar_dados_resumo():
 
     return faturamento.iloc[0], devolucao.iloc[0], estoque_resumo
 
-def enviar_email(resumo):
+def enviar_email(resumo_html):
     from email.utils import formataddr
 
     remetente = os.getenv("EMAIL_FROM")
@@ -70,12 +74,12 @@ def enviar_email(resumo):
     smtp_host = os.getenv("EMAIL_SMTP", "smtp-relay.brevo.com")
     smtp_port = int(os.getenv("EMAIL_PORT", 587))
 
-    msg = MIMEMultipart()
+    msg = MIMEMultipart("alternative")
     msg['From'] = formataddr(("Temperare Relatórios", remetente))
     msg['To'] = ", ".join(destinatarios)
     msg['Subject'] = f"Resumo Diário do ETL - {date.today().strftime('%d/%m/%Y')}"
 
-    msg.attach(MIMEText(resumo, 'plain'))
+    msg.attach(MIMEText(resumo_html, 'html'))
 
     with smtplib.SMTP(smtp_host, smtp_port) as servidor:
         servidor.starttls()
@@ -87,22 +91,23 @@ def enviar_email(resumo):
 def run_analise():
     faturamento, devolucao, estoque_resumo = coletar_dados_resumo()
 
-    texto = f"""
-✅ RESUMO DIÁRIO DOS PEDIDOS - {date.today().strftime('%d/%m/%Y')}
+    html = f"""
+    <html>
+    <body>
+    <h2>✅ RESUMO DIÁRIO DOS PEDIDOS - {date.today().strftime('%d/%m/%Y')}</h2>
+    <p><strong>FATURAMENTO:</strong><br>
+    - Pedidos faturados: {int(faturamento['pedidos'] or 0)}<br>
+    - Valor total bruto: {formatar_reais_direto(faturamento['total'])}</p>
 
-FATURAMENTO:
-- Pedidos faturados: {faturamento['pedidos'] or 0}
-- Valor total bruto: {locale.currency(faturamento['total'] or 0, grouping=True)}
+    <p><strong>DEVOLUÇÕES:</strong><br>
+    - Pedidos devolvidos: {int(devolucao['pedidos'] or 0)}<br>
+    - Valor total devolvido: {formatar_reais_direto(devolucao['total'])}</p>
 
-DEVOLUÇÕES:
-- Pedidos devolvidos: {devolucao['pedidos'] or 0}
-- Valor total devolvido: {locale.currency(devolucao['total'] or 0, grouping=True)}
+    <hr>
 
--------------------------------------------------------------
+    <h2>✅ RESUMO DIÁRIO DO ESTOQUE - {date.today().strftime('%d/%m/%Y')}</h2>
 
-✅ RESUMO DIÁRIO DO ESTOQUE - {date.today().strftime('%d/%m/%Y')}
-
-ESTOQUE REGULAR:
+    <p><strong>ESTOQUE REGULAR:</strong><br>
 """
     total_qtde_regular = 0
     total_valor_regular = 0
@@ -112,19 +117,19 @@ ESTOQUE REGULAR:
         valor = dados['valor_total'] or 0
         total_qtde_regular += qtde
         total_valor_regular += valor
-        texto += f"- {chave}: {qtde:.0f} unidades | {formatar_reais(valor)}\n"
+        html += f"- {chave}: {qtde:.0f} unidades | {formatar_reais(valor)}<br>"
 
-    texto += "\nESTOQUE FULFILLMENT:\n"
+    html += "</p><p><strong>ESTOQUE FULFILLMENT:</strong><br>"
     dados = estoque_resumo.get("CD_SP_FULL")
     qtde_full = dados['qtde_total'] or 0
     valor_full = dados['valor_total'] or 0
-    texto += f"- FULL MELI RJ: {qtde_full:.0f} unidades | {formatar_reais(valor_full)}\n"
+    html += f"- FULL MELI RJ: {qtde_full:.0f} unidades | {formatar_reais(valor_full)}<br>"
 
     total_geral_qtde = total_qtde_regular + qtde_full
     total_geral_valor = total_valor_regular + valor_full
-    texto += f"\n**Total Regular + Fulfillment: {total_geral_qtde:.0f} unidades | {formatar_reais(total_geral_valor)}**\n"
+    html += f"<br><b>Total Regular + Fulfillment: {total_geral_qtde:.0f} unidades | {formatar_reais(total_geral_valor)}</b></p>"
 
-    texto += "\nESTOQUE DE AVARIADOS:\n"
+    html += "<p><strong>ESTOQUE DE AVARIADOS:</strong><br>"
     total_qtde_pend = 0
     total_valor_pend = 0
     for chave in ["CD_RJ_PENDENCIA", "CD_ES_PENDENCIA"]:
@@ -133,12 +138,14 @@ ESTOQUE REGULAR:
         valor = dados['valor_total'] or 0
         total_qtde_pend += qtde
         total_valor_pend += valor
-        texto += f"- {chave}: {qtde:.0f} unidades | {formatar_reais(valor)}\n"
+        html += f"- {chave}: {qtde:.0f} unidades | {formatar_reais(valor)}<br>"
 
-    texto += f"\n**Total em Pendências: {total_qtde_pend:.0f} unidades | {formatar_reais(total_valor_pend)}**\n" 
+    html += f"<br><b>Total em Pendências: {total_qtde_pend:.0f} unidades | {formatar_reais(total_valor_pend)}</b></p>"
 
-    print(texto)
-    enviar_email(texto)
+    html += "<p><em>Pipeline executado com sucesso.</em></p></body></html>"
+
+    print(html)
+    enviar_email(html)
 
 if __name__ == "__main__":
     run_analise()
