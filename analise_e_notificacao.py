@@ -92,11 +92,11 @@ def run_analise():
 
 FATURAMENTO:
 - Pedidos faturados: {faturamento['pedidos'] or 0}
-- Valor total bruto: {faturamento['total']}
+- Valor total bruto: {locale.currency(faturamento['total'] or 0, grouping=True)}
 
 DEVOLUÇÕES:
 - Pedidos devolvidos: {devolucao['pedidos'] or 0}
-- Valor total devolvido: {devolucao['total']}
+- Valor total devolvido: {locale.currency(devolucao['total'] or 0, grouping=True)}
 
 -------------------------------------------------------------
 
