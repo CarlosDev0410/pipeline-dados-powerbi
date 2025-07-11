@@ -1,6 +1,6 @@
 select
 	distinct
-    DATA_FATURAMENTO,
+	DATA_FATURAMENTO,
 	DATA_PEDIDO,
 	PARCEIRO,
 	GRUPO_MATERIAL,
@@ -10,7 +10,7 @@ select
 	VALOR_UNITARIO,
 	OUTRAS_DESPESAS,
 	EMPRESA,
-	CMV,
+	cmv,
 	CUSTO,
 	PEDIDOS,
 	QTDE_VENDIDA,
@@ -28,29 +28,29 @@ select
 	CONTRIBUINTE_ICMS,
 	LOCAL_DESTINO,
 	DIFAL,
-	case
+	(case
 		when QUANTIDADE <= 1 then VALOR_TERMO
-		else VALOR_TERMO / QUANTIDADE
-	end as COMISSAO_DO_CANAL,
+		when QUANTIDADE > 1 then VALOR_TERMO / QUANTIDADE
+	end) as COMISSAO_DO_CANAL,
 	VENDEDOR,
-	ID_PEDIDO,
 	VIA_TRAFEGO,
-	CLIENTE_PROP
+	CLIENTE_PROP,
+	ID_PEDIDO
 from
 	(
 	select
 		N.dtemissao as DATA_FATURAMENTO,
 		PV.DTPEDIDOVENDA as DATA_PEDIDO,
-		coalesce(p.nome, pvt.descricao, 'VENDA DIRETA') as PARCEIRO,
+		coalesce(p.nome, pvt.descricao, 'VENDA DIRETA') as parceiro,
 		MG.NOME as GRUPO_MATERIAL,
 		M.IDENTIFICACAO,
 		M.NOME,
-		((NFPI.qtde) * (NFPI.valorunitario) - coalesce(NFPI.valordesconto, 0) / 100) as VALOR,
-		(((NFPI.qtde) * (NFPI.valorunitario) - coalesce(NFPI.valordesconto, 0) / 100)/ NFPI.qtde) as VALOR_UNITARIO,
-		coalesce(SUM(vm.outrasdespesas / 100), 0) as OUTRAS_DESPESAS,
-		PE.nomefantasia as EMPRESA,
-		vm.valorcustomaterial as CMV,
-		m.valorvendaminimo as CUSTO,
+		((NFPI.qtde) * (NFPI.valorunitario) - coalesce(NFPI.valordesconto, 0)/ 100) as VALOR,
+		(((NFPI.qtde) * (NFPI.valorunitario) - coalesce(NFPI.valordesconto, 0)/ 100)/ NFPI.qtde) as VALOR_UNITARIO,
+		coalesce(sum(vm.outrasdespesas / 100), 0) as OUTRAS_DESPESAS,
+		PE.nomefantasia as empresa,
+		vm.valorcustomaterial as cmv,
+		m.valorvendaminimo as custo,
 		1 as PEDIDOS,
 		(
 		select
@@ -59,13 +59,13 @@ from
 			notafiscalprodutoitem nfpi2
 		where
 			nfpi2.cdnotafiscalproduto = nfpi.cdnotafiscalproduto
-			and nfpi2.cdmaterial = nfpi.cdmaterial) as QTDE_VENDIDA,
-		n.numero as NOTA,
-		PV.identificador as ID_PEDIDO,
+			and nfpi2.cdmaterial = nfpi.cdmaterial)as QTDE_VENDIDA,
+		n.numero as nota,
 		T.nome as TRANSPORTADOR,
 		coalesce((NFPI.valorfrete / 100), 0) as FRETE,
 		case
-			when vce_frete.VALOR ~ '^[0-9]+([,.][0-9]+)?$' then replace(replace(vce_frete.VALOR, '.', ''), ',', '.')::numeric
+			when vce_frete.VALOR ~ '^[0-9]+([,.][0-9]+)?$'
+    		then replace(replace(vce_frete.VALOR, '.', ''), ',', '.')::numeric
 			else 0
 		end as FRETE_TEMPERARE,
 		vce_trafego.VALOR as VIA_TRAFEGO,
@@ -76,23 +76,24 @@ from
 		C.NOME as CLIENTE,
 		F.nome as FABRICANTE,
 		FP.nome as FORMA_PAGAMENTO,
-		pp.nome as PRAZO_PAGAMENTO,
+		pp.nome as prazo_pagamento,
 		vv.total_documento / 100 as valorvenda,
-		case
+		(case
 			when c2.contribuinteicmstipo = 0 then 'CONTRIBUINTE'
-			when c2.contribuinteicmstipo = 1 then 'ISENTO'
-			when c2.contribuinteicmstipo = 2 then 'NÃO CONTRIBUINTE'
+			when contribuinteicmstipo = 1 then 'ISENTO'
+			when contribuinteicmstipo = 2 then 'NÃO CONTRIBUINTE'
 			else 'CONTRIBUINTE'
-		end as CONTRIBUINTE_ICMS,
-		case
+		end) as CONTRIBUINTE_ICMS,
+		(case
 			when NFP.localdestinonfe = 0 then 'INTERNA'
-			when NFP.localdestinonfe = 1 then 'INTERESTADUAL'
-			when NFP.localdestinonfe = 2 then 'OPERAÇÃO COM EXTERIOR'
-		end as LOCAL_DESTINO,
-		coalesce(NFPI.valoricmsdestinatario, 0)/ 100 as DIFAL,
-		coalesce(SUM(axd.valortermo), 0) / 100 as VALOR_TERMO,
-		COUNT(nfpi.cdnotafiscalprodutoitem) as QUANTIDADE,
-		VEND.NOME as VENDEDOR
+			when localdestinonfe = 1 then 'INTERESTADUAL'
+			when localdestinonfe = 2 then 'OPERAÇÃO COM EXTERIOR'
+		end) as LOCAL_DESTINO,
+		coalesce(NFPi.valoricmsdestinatario, 0)/ 100 as DIFAL,
+		coalesce(sum(axd.valortermo), 0) / 100 as VALOR_TERMO,
+		count(nfpi.cdnotafiscalprodutoitem) as QUANTIDADE,
+		VEND.NOME as VENDEDOR,
+		PV.identificador::VARCHAR as ID_PEDIDO
 	from
 		MATERIAL M
 	join NOTAFISCALPRODUTOITEM NFPI on
@@ -190,58 +191,56 @@ from
 		and ((NFP.cdnaturezaoperacao in (15, 29, 30, 124, 685))
 			or (NFP.cdnaturezaoperacao is null))
 	group by
-		N.dtemissao,
-		PV.DTPEDIDOVENDA,
-		coalesce(p.nome, pvt.descricao, 'VENDA DIRETA'),
-		MG.NOME,
-		M.IDENTIFICACAO,
-		M.NOME,
-		NFPI.qtde,
-		NFPI.valorunitario,
-		NFPI.valordesconto,
-		PE.nomefantasia,
-		vm.valorcustomaterial,
-		m.valorvendaminimo,
-		n.numero,
-		PV.identificador,
-		T.nome,
-		NFPI.valorfrete,
-		vce_frete.VALOR,
-		vce_trafego.VALOR,
-		vce_prop.VALOR,
-		UF.sigla,
-		MUN.nome,
-		E.bairro,
-		C.NOME,
-		F.nome,
+		1,
+		2,
+		3,
+		4,
+		5,
+		6,
+		10,
+		nfpi.qtde,
+		nfpi.valorunitario,
+		nfpi.valordesconto,
+		11 ,
+		12,
+		15,
+		16,
+		17,
+		18,
+		19,
+		20,
+		21,
+		22,
+		23,
+		24,
+		25,
 		FP.nome,
-		pp.nome,
 		vv.total_documento,
 		c2.contribuinteicmstipo,
-		NFP.localdestinonfe,
-		NFPI.valoricmsdestinatario,
-		axd.valortermo,
+		nfp.localdestinonfe,
+		nfpi.valoricmsdestinatario,
+		pp.nome,
 		nfpi.cdnotafiscalproduto,
 		nfpi.cdmaterial,
-		VEND.NOME
-union
+		VEND.NOME,
+		PV.identificador
+  union
 	select
 		V.dtvenda as DATA_FATURAMENTO,
 		PV.DTPEDIDOVENDA as DATA_PEDIDO,
-		coalesce(p.nome, pvt.descricao, 'VENDA DIRETA') as PARCEIRO,
+		coalesce(p.nome, pvt.descricao, 'VENDA DIRETA') as parceiro,
 		MG.NOME as GRUPO_MATERIAL,
 		M.IDENTIFICACAO,
 		M.NOME,
 		SUM(((VM.quantidade) * (VM.PRECO) - coalesce(vm.desconto, 0)/ 100)) as VALOR,
 		SUM((((VM.quantidade) * (VM.PRECO) - coalesce(vm.desconto, 0)/ 100))/ VM.quantidade) as VALOR_UNITARIO,
-		SUM(vm.outrasdespesas / 100) as OUTRAS_DESPESAS,
-		PE.nomefantasia as EMPRESA,
-		vm.valorcustomaterial as CMV,
-		m.valorvendaminimo as CUSTO,
+		sum(vm.outrasdespesas / 100) as OUTRAS_DESPESAS,
+		PE.nomefantasia as empresa,
+		vm.valorcustomaterial as cmv,
+		m.valorvendaminimo as custo,
 		1 as PEDIDOS,
 		null as QTDE_VENDIDA,
-		v.cdvenda::VARCHAR as NOTA,
-		PV.identificador as ID_PEDIDO,
+		v.cdvenda::VARCHAR as nota,
 		T.nome as TRANSPORTADOR,
 		(v.valorfrete / 100) as FRETE,
 		coalesce(replace(vce_frete.VALOR, ',', '.'), '0')::numeric as FRETE_TEMPERARE,
@@ -253,19 +252,20 @@ union
 		C.NOME as CLIENTE,
 		F.nome as FABRICANTE,
 		FP.nome as FORMA_PAGAMENTO,
-		pp.nome as PRAZO_PAGAMENTO,
+		pp.nome as prazo_pagamento,
 		vv.total_documento / 100 as valorvenda,
-		case
+		(case
 			when c2.contribuinteicmstipo = 0 then 'CONTRIBUINTE'
-			when c2.contribuinteicmstipo = 1 then 'ISENTO'
-			when c2.contribuinteicmstipo = 2 then 'NÃO CONTRIBUINTE'
+			when contribuinteicmstipo = 1 then 'ISENTO'
+			when contribuinteicmstipo = 2 then 'NÃO CONTRIBUINTE'
 			else 'CONTRIBUINTE'
-		end as CONTRIBUINTE_ICMS,
+		end) as CONTRIBUINTE_ICMS,
 		null as LOCAL_DESTINO,
 		null::numeric as DIFAL,
 		null::numeric as VALOR_TERMO,
-		COUNT(vm.cdvendamaterial) as QUANTIDADE,
-		VEND.NOME as VENDEDOR
+		count(vm.cdvendamaterial) as QUANTIDADE,
+		VEND.NOME as VENDEDOR,
+		PV.identificador::VARCHAR as ID_PEDIDO
 	from
 		MATERIAL M
 	join vendamaterial VM on
@@ -349,34 +349,34 @@ union
 		and v.cdvendasituacao = 5
 		and v.cdprojeto = 67
 	group by
-		V.dtvenda,
-		PV.DTPEDIDOVENDA,
-		coalesce(p.nome, pvt.descricao, 'VENDA DIRETA'),
-		MG.NOME,
-		M.IDENTIFICACAO,
-		M.NOME,
-		PE.nomefantasia,
-		vm.valorcustomaterial,
-		m.valorvendaminimo,
-		v.cdvenda,
-		PV.identificador,
-		T.nome,
-		v.valorfrete,
-		vce_frete.VALOR,
-		vce_trafego.VALOR,
-		vce_prop.VALOR,
-		UF.sigla,
-		MUN.nome,
-		E.bairro,
-		C.NOME,
-		F.nome,
+		1,
+		2,
+		3,
+		4,
+		5,
+		6,
+		10,
+		11,
+		12,
+		15,
+		16,
+		17,
+		18,
+		19,
+		20,
+		21,
+		22,
+		23,
+		24,
+		25,
 		FP.nome,
-		pp.nome,
 		vv.total_documento,
 		vp.total_documento,
 		c2.contribuinteicmstipo,
-		VEND.NOME
+		pp.nome,
+		VEND.NOME,
+		PV.identificador
+	order by
+		1,
+		8 desc
 ) as t
-order by
-	DATA_FATURAMENTO,
-	VALOR_UNITARIO desc;
