@@ -5,7 +5,7 @@ from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 
 load_dotenv()
-data_hoje = '09/04/2025'
+data_hoje = date.today()
 
 def get_sqlalchemy_engine():
     return create_engine(
