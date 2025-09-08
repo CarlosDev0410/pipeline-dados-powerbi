@@ -6,6 +6,8 @@ from datetime import date
 import pandas as pd
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
+import request
+import json
 
 load_dotenv()
 
@@ -64,64 +66,72 @@ def coletar_dados_resumo():
 
     return faturamento.iloc[0], devolucao.iloc[0], estoque_resumo
 
-import os, smtplib, ssl
-from datetime import date
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.utils import formataddr
+BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
+
+class EmailAPIError(RuntimeError):
+    pass
 
 def enviar_email(resumo_html: str) -> None:
+
+    api_key = os.getenv("BREVO_API_KEY")
     remetente = os.getenv("EMAIL_FROM")
-    smtp_user = os.getenv("EMAIL_SMTP_USER")
-    senha = os.getenv("EMAIL_PASS")
     destinatarios = [d.strip() for d in os.getenv("EMAIL_TO", "").split(",") if d.strip()]
-    smtp_host = os.getenv("EMAIL_SMTP", "smtp-relay.brevo.com")
-    smtp_port_env = int(os.getenv("EMAIL_PORT", 587))
+    from_name = os.getenv("EMAIL_FROM_NAME", "Temperare Relatórios")
 
-    if not (remetente and smtp_user and senha and destinatarios):
-        raise RuntimeError("Variáveis de ambiente de e-mail ausentes.")
+    if not api_key:
+        raise EmailAPIError("Faltou BREVO_API_KEY no ambiente.")
+    if not (remetente and destinatarios):
+        raise EmailAPIError("Faltaram EMAIL_FROM e/ou EMAIL_TO no ambiente.")
 
-    msg = MIMEMultipart("alternative")
-    msg["From"] = formataddr(("Temperare Relatórios", remetente))
-    msg["To"] = ", ".join(destinatarios)
-    msg["Subject"] = f"Resumo Diário do ETL - {date.today():%d/%m/%Y}"
-    msg.attach(MIMEText(resumo_html, "html", "utf-8"))
+    payload = {
+        "sender": {"email": remetente, "name": from_name},
+        "to": [{"email": d} for d in destinatarios],
+        "subject": f"Resumo Diário do ETL - {date.today():%d/%m/%Y}",
+        "htmlContent": resumo_html,
+    }
+    # Remove chaves None para evitar rejeição do schema:
+    payload = {k: v for k, v in payload.items() if v is not None}
 
-    ctx = ssl.create_default_context()
-    timeout = 20  # segundos
+    headers = {
+        "api-key": api_key,
+        "accept": "application/json",
+        "content-type": "application/json",
+    }
 
-    last_err = None
-
-    # 1) Tenta 587 com STARTTLS (porta padrão do Brevo)
     try:
-        with smtplib.SMTP(smtp_host, smtp_port_env, timeout=timeout) as srv:
-            srv.set_debuglevel(1)  # log no stdout (remova em prod)
-            srv.ehlo()
-            srv.starttls(context=ctx)
-            srv.ehlo()
-            srv.login(smtp_user, senha)
-            srv.sendmail(remetente, destinatarios, msg.as_string())
-            print("📧 Email enviado via 587/STARTTLS.")
-            return
-    except Exception as e:
-        last_err = e
-        print(f"[WARN] Falha no 587/STARTTLS: {e!r}")
+        resp = requests.post(
+            BREVO_API_URL,
+            headers=headers,
+            data=json.dumps(payload),
+            timeout=20
+        )
+    except requests.Timeout as e:
+        raise EmailAPIError("Timeout ao chamar a API da Brevo.") from e
+    except requests.RequestException as e:
+        raise EmailAPIError(f"Falha de rede ao chamar a API da Brevo: {e}") from e
 
-    # 2) Fallback 465 com SSL direto
+    # Trata HTTP != 2xx
+    if not (200 <= resp.status_code < 300):
+        # A Brevo retorna JSON com detalhes de erro
+        body = None
+        try:
+            body = resp.json()
+        except Exception:
+            body = resp.text
+        raise EmailAPIError(f"Brevo respondeu {resp.status_code}: {body}")
+
+    # Sucesso: deve vir {"messageId": "..."}
     try:
-        with smtplib.SMTP_SSL(smtp_host, 465, context=ctx, timeout=timeout) as srv:
-            srv.set_debuglevel(1)  # log no stdout (remova em prod)
-            srv.login(smtp_user, senha)
-            srv.sendmail(remetente, destinatarios, msg.as_string())
-            print("📧 Email enviado via 465/SSL.")
-            return
+        data = resp.json()
     except Exception as e:
-        print(f"[ERROR] Falha no 465/SSL: {e!r}")
-        # Se chegou aqui, deu ruim nos dois caminhos
-        raise RuntimeError(
-            "Não foi possível conectar ao servidor SMTP (587 e 465). "
-            "Verifique bloqueio de saída no Railway ou tente o envio por API."
-        ) from (e or last_err)
+        raise EmailAPIError("Resposta sem JSON válido da Brevo.") from e
+
+    message_id = data.get("messageId")
+    if not message_id:
+        # A doc indica messageId; se não vier, loga o corpo inteiro
+        raise EmailAPIError(f"Envio sem messageId na resposta: {data}")
+
+    print(f"📧 Email enviado com sucesso via Brevo API. messageId={message_id}")
 
 
 def run_analise():
