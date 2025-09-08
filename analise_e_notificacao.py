@@ -6,7 +6,7 @@ from datetime import date
 import pandas as pd
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
-import request
+import requests
 import json
 
 load_dotenv()
