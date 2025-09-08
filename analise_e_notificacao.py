@@ -64,29 +64,65 @@ def coletar_dados_resumo():
 
     return faturamento.iloc[0], devolucao.iloc[0], estoque_resumo
 
-def enviar_email(resumo_html):
-    from email.utils import formataddr
+import os, smtplib, ssl
+from datetime import date
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.utils import formataddr
 
+def enviar_email(resumo_html: str) -> None:
     remetente = os.getenv("EMAIL_FROM")
     smtp_user = os.getenv("EMAIL_SMTP_USER")
     senha = os.getenv("EMAIL_PASS")
-    destinatarios = os.getenv("EMAIL_TO").split(",")
+    destinatarios = [d.strip() for d in os.getenv("EMAIL_TO", "").split(",") if d.strip()]
     smtp_host = os.getenv("EMAIL_SMTP", "smtp-relay.brevo.com")
-    smtp_port = int(os.getenv("EMAIL_PORT", 587))
+    smtp_port_env = int(os.getenv("EMAIL_PORT", 587))
+
+    if not (remetente and smtp_user and senha and destinatarios):
+        raise RuntimeError("Variáveis de ambiente de e-mail ausentes.")
 
     msg = MIMEMultipart("alternative")
-    msg['From'] = formataddr(("Temperare Relatórios", remetente))
-    msg['To'] = ", ".join(destinatarios)
-    msg['Subject'] = f"Resumo Diário do ETL - {date.today().strftime('%d/%m/%Y')}"
+    msg["From"] = formataddr(("Temperare Relatórios", remetente))
+    msg["To"] = ", ".join(destinatarios)
+    msg["Subject"] = f"Resumo Diário do ETL - {date.today():%d/%m/%Y}"
+    msg.attach(MIMEText(resumo_html, "html", "utf-8"))
 
-    msg.attach(MIMEText(resumo_html, 'html'))
+    ctx = ssl.create_default_context()
+    timeout = 20  # segundos
 
-    with smtplib.SMTP(smtp_host, smtp_port) as servidor:
-        servidor.starttls()
-        servidor.login(smtp_user, senha)
-        servidor.sendmail(remetente, destinatarios, msg.as_string())
+    last_err = None
 
-    print("📧 Email enviado com sucesso.")
+    # 1) Tenta 587 com STARTTLS (porta padrão do Brevo)
+    try:
+        with smtplib.SMTP(smtp_host, smtp_port_env, timeout=timeout) as srv:
+            srv.set_debuglevel(1)  # log no stdout (remova em prod)
+            srv.ehlo()
+            srv.starttls(context=ctx)
+            srv.ehlo()
+            srv.login(smtp_user, senha)
+            srv.sendmail(remetente, destinatarios, msg.as_string())
+            print("📧 Email enviado via 587/STARTTLS.")
+            return
+    except Exception as e:
+        last_err = e
+        print(f"[WARN] Falha no 587/STARTTLS: {e!r}")
+
+    # 2) Fallback 465 com SSL direto
+    try:
+        with smtplib.SMTP_SSL(smtp_host, 465, context=ctx, timeout=timeout) as srv:
+            srv.set_debuglevel(1)  # log no stdout (remova em prod)
+            srv.login(smtp_user, senha)
+            srv.sendmail(remetente, destinatarios, msg.as_string())
+            print("📧 Email enviado via 465/SSL.")
+            return
+    except Exception as e:
+        print(f"[ERROR] Falha no 465/SSL: {e!r}")
+        # Se chegou aqui, deu ruim nos dois caminhos
+        raise RuntimeError(
+            "Não foi possível conectar ao servidor SMTP (587 e 465). "
+            "Verifique bloqueio de saída no Railway ou tente o envio por API."
+        ) from (e or last_err)
+
 
 def run_analise():
     faturamento, devolucao, estoque_resumo = coletar_dados_resumo()
