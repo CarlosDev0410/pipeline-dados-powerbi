@@ -4,4 +4,3 @@ sqlalchemy
 python-dotenv
 datetime
 requests
-json
