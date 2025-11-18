@@ -44,7 +44,7 @@ def coletar_dados_resumo():
         "CD_RJ": "CD RJ - JD OLIMPO",
         "CD_MG": "CD MG - ORMIFRIO",
         "CD_ES": "CD ES - MERCOCAMP",
-        "CD_SP_FULL": "CD - MELI SP (FULFILLMENT)",
+        "CD_SP_FULL": "CD SP - MELI (FULFILLMENT)",
         "CD_RJ_PENDENCIA": "CD RJ - JO PENDENCIA",
         "CD_ES_PENDENCIA": "CD ES - MC PENDENCIA",
     }
