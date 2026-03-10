@@ -1,0 +1,1 @@
+worker: python etl_pedidos.py
