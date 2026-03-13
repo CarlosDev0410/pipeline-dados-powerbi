@@ -9,7 +9,7 @@ select
 	(coalesce(pv.valorfrete, 0) / 100.0) as FRETE,
 	(coalesce(pvm.desconto, 0) / 100.0) as DESCONTO,
 	(coalesce(pvm.preco, 0) - (coalesce(pvm.desconto, 0) / 100.0)) as VALOR_PRODUTO,
-	((coalesce(pv.valorfrete, 0) / 100.0) + (coalesce(pvm.preco, 0))) - (coalesce(pvm.desconto, 0) / 100.0) as VALOR_FINAL,
+	((COALESCE(pvm.preco, 0) * COALESCE(pvm.quantidade, 0)) - (COALESCE(pvm.desconto, 0) / 100.0)) + (COALESCE(pv.valorfrete, 0) / 100.0) AS VALOR_FINAL,
 	coalesce(l.nome, 'ESTOQUE PADRÃO') as LOCAL_DE_ESTOQUE,
 	coalesce(pvt.descricao, 'OUTROS') as ORIGEM,
 	coalesce(pv.pedidovendasituacao, 0) as SITUACAO
