@@ -22,6 +22,7 @@ JOIN
 WHERE
     m.produto IS TRUE
     AND m.ativo IS TRUE
-    AND vgm.cdlocalarmazenagem IN (34, 67, 265, 463, 133, 331, 300, 331, 397, 499, 500, 501)
+    AND vgm.cdlocalarmazenagem IN (34, 67, 265, 463, 133, 331, 300, 331, 397, 499, 500, 501, 299, 504, 511, 498, 510, 199, 166, 503, 
+    502, 506, 507)
 GROUP BY
     l.nome, vgm.identificacao, vgm.nome, F.nome, mg.nome, vgm.valorcustomaterial;
