@@ -44,9 +44,25 @@ def coletar_dados_resumo():
         "CD_RJ": "CD RJ - JD OLIMPO",
         "CD_MG": "CD MG - ORMIFRIO",
         "CD_ES": "CD ES - MERCOCAMP",
-        "CD_SP_FULL": "CD SP - MELI (FULFILLMENT)",
+        "CD_SP_MELI": "CD SP - MELI (FULFILLMENT)",
         "CD_RJ_PENDENCIA": "CD RJ - JO PENDENCIA",
         "CD_ES_PENDENCIA": "CD ES - MC PENDENCIA",
+        "CD_ES_AVARIA": "CD ES - MC AVARIAS",
+        "CD_RJ_USADOS": "CD RJ - JO USADOS",
+        "CD_ES_JD_OLIMPO": "CD ES - JD OLIMPO",
+        "CD_FULL_RETORNOS": "CD FULL - MELI RJ RETORNO",
+        "SEPARACAO_LOJA_XEREM":"CD SEPARAÇÃO - LOJA XEREM",
+        "EM_RECEBIMENTO":"EM RECEBIMENTO (SEPARAÇÃO)",
+        "CD_RJ_AVARIA":"CD RJ - JO AVARIA",
+        "CD_RJ_DEFEITO":"CD RJ - JO DEFEITO",
+        "CD_ES_JO_AVARIA":"CD ES - JD OLIMPO AVARIA",
+        "CD_RJ_PECAS":"CD RJ - JO PEÇAS",
+        "EM_MANUTENCAO":"EM MANUTENÇÃO (FABRICANTE)",
+        "CD_ES_DEFEITO":"CD ES - MC DEFEITO",
+        "CD_FULL_SEPARACAO":"CD FULL - MELI RJ SEPARAÇÃO",
+        "CD_SP_MAGALU":"CD SP - MAGALU (FULFILLMENT)",
+        "LOJA_XEREM":"LOJA XERÉM - CD RJ",
+        "LOJA_XEREM_ES":"LOJA XERÉM - CD ES"
     }
 
     estoque_resumo = {}
@@ -157,7 +173,7 @@ def run_analise():
 """
     total_qtde_regular = 0
     total_valor_regular = 0
-    for chave in ["CD_RJ", "CD_ES", "CD_MG"]:
+    for chave in ["CD_RJ", "CD_ES", "CD_MG", "LOJA_XEREM", "LOJA_XEREM_ES", "CD_ES_JO_AVARIA"]:
         dados = estoque_resumo.get(chave)
         qtde = dados['qtde_total'] or 0
         valor = dados['valor_total'] or 0
@@ -165,20 +181,26 @@ def run_analise():
         total_valor_regular += valor
         html += f"- {chave}: {qtde:.0f} unidades | {formatar_reais(valor)}<br>"
 
+    total_qtde_full = 0
+    total_valor_full = 0
     html += "</p><p><strong>ESTOQUE FULFILLMENT:</strong><br>"
-    dados = estoque_resumo.get("CD_SP_FULL")
-    qtde_full = dados['qtde_total'] or 0
-    valor_full = dados['valor_total'] or 0
-    html += f"- FULL MELI RJ: {qtde_full:.0f} unidades | {formatar_reais(valor_full)}<br>"
+    for chave in ["CD_SP_MELI", "CD_SP_MAGALU"]:
+        dados = estoque_resumo.get(chave)
+        qtde_full = dados['qtde_total'] or 0
+        valor_full = dados['valor_total'] or 0
+        total_qtde_full += qtde_full
+        total_valor_full += valor_full
+        html += f"- {chave}: {qtde_full:.0f} unidades | {formatar_reais(valor_full)}<br>"
 
-    total_geral_qtde = total_qtde_regular + qtde_full
-    total_geral_valor = total_valor_regular + valor_full
+    total_geral_qtde = total_qtde_regular + total_qtde_full
+    total_geral_valor = total_valor_regular + total_valor_full
+
     html += f"<br><b style='color: #0009FF;'>Total Regular + Fulfillment: {total_geral_qtde:.0f} unidades | {formatar_reais(total_geral_valor)}</b></p>"
 
-    html += "<p><strong>ESTOQUE DE AVARIADOS:</strong><br>"
     total_qtde_pend = 0
     total_valor_pend = 0
-    for chave in ["CD_RJ_PENDENCIA", "CD_ES_PENDENCIA"]:
+    html += "<p><strong>ESTOQUE DE PENDENCIAS, AVARIADOS E TRANSFERÊNCIA:</strong><br>"
+    for chave in ["CD_RJ_PENDENCIA", "CD_ES_PENDENCIA", "CD_RJ_AVARIA", "CD_ES_AVARIA", "CD_ES_JO_AVARIA", "CD_ES_DEFEITO", "CD_RJ_DEFEITO", "CD_RJ_PECAS", "EM_MANUTENCAO", "EM_RECEBIMENTO", "SEPARACAO_LOJA_XEREM", "CD_FULL_SEPARACAO", "CD_FULL_RETORNOS", ]:
         dados = estoque_resumo.get(chave)
         qtde = dados['qtde_total'] or 0
         valor = dados['valor_total'] or 0
@@ -188,7 +210,7 @@ def run_analise():
 
     html += f"<br><b style='color: #0009FF;'>Total em Pendências: {total_qtde_pend:.0f} unidades | {formatar_reais(total_valor_pend)}</b></p>"
 
-    html += "<p><em>Pipeline executado com sucesso. Version 1.09</em></p></body></html>"
+    html += "<p><em>Pipeline executado com sucesso. Version 1.10</em></p></body></html>"
 
     print(html)
     enviar_email(html)

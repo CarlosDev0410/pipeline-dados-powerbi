@@ -35,7 +35,8 @@ select
 	VENDEDOR,
 	VIA_TRAFEGO,
 	CLIENTE_PROP,
-	ID_PEDIDO
+	ID_PEDIDO,
+	DTALTERA
 from
 	(
 	select
@@ -93,7 +94,8 @@ from
 		coalesce(sum(axd.valortermo), 0) / 100 as VALOR_TERMO,
 		count(nfpi.cdnotafiscalprodutoitem) as QUANTIDADE,
 		VEND.NOME as VENDEDOR,
-		PV.identificador::VARCHAR as ID_PEDIDO
+		PV.identificador::VARCHAR as ID_PEDIDO,
+		V.dtaltera as DTALTERA
 	from
 		MATERIAL M
 	join NOTAFISCALPRODUTOITEM NFPI on
@@ -185,7 +187,8 @@ from
 			and pvt.cdpedidovendatipo = 100)
 	where
 		1 = 1
-		and N.dtemissao BETWEEN :data_inicio AND :data_fim
+		and N.dtemissao >= :data_inicio
+		and (N.dtemissao >= CURRENT_DATE - INTERVAL '1 day' OR V.dtaltera >= :data_ref)
 		and NFPI.valorunitario > 0
 		and N.cdnotastatus in (10, 11)
 		and ((NFP.cdnaturezaoperacao in (15, 29, 30, 124, 685))
@@ -223,7 +226,8 @@ from
 		nfpi.cdnotafiscalproduto,
 		nfpi.cdmaterial,
 		VEND.NOME,
-		PV.identificador
+		PV.identificador,
+		V.dtaltera
   union
 	select
 		V.dtvenda as DATA_FATURAMENTO,
@@ -265,7 +269,8 @@ from
 		null::numeric as VALOR_TERMO,
 		count(vm.cdvendamaterial) as QUANTIDADE,
 		VEND.NOME as VENDEDOR,
-		PV.identificador::VARCHAR as ID_PEDIDO
+		PV.identificador::VARCHAR as ID_PEDIDO,
+		V.dtaltera as DTALTERA
 	from
 		MATERIAL M
 	join vendamaterial VM on
@@ -345,7 +350,8 @@ from
 )
 	where
 		1 = 1
-		and V.dtvenda BETWEEN :data_inicio AND :data_fim
+		and V.dtvenda >= :data_inicio
+		and (V.dtvenda >= CURRENT_DATE - INTERVAL '1 day' OR V.dtaltera >= :data_ref)
 		and v.cdvendasituacao = 5
 		and v.cdprojeto = 67
 	group by
@@ -375,7 +381,8 @@ from
 		c2.contribuinteicmstipo,
 		pp.nome,
 		VEND.NOME,
-		PV.identificador
+		PV.identificador,
+		V.dtaltera
 	order by
 		1,
 		8 desc
