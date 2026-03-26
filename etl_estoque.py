@@ -27,8 +27,14 @@ def insert_estoque(df, engine):
     if df.empty:
         print("Nenhum dado de estoque encontrado.")
         return
-    df.to_sql("estoque", con=engine, index=False, if_exists="replace", method="multi")
-    print(f"{len(df)} registros de estoque inseridos (tabela sobrescrita).")
+    
+    with engine.connect() as conn:
+        # Em vez de 'replace', deletamos o conteúdo para manter a estrutura (colunas extras como created_at)
+        conn.execute(text("DELETE FROM estoque"))
+        conn.commit()
+        
+    df.to_sql("estoque", con=engine, index=False, if_exists="append", method="multi")
+    print(f"✅ {len(df)} registros de estoque inseridos (estrutura preservada).")
 
 def run_etl_estoque():
     print("🔹 Iniciando ETL de Estoque...")
