@@ -173,7 +173,7 @@ def run_analise():
 """
     total_qtde_regular = 0
     total_valor_regular = 0
-    for chave in ["CD_RJ", "CD_ES", "CD_MG", "LOJA_XEREM", "LOJA_XEREM_ES", "CD_ES_JO_AVARIA"]:
+    for chave in ["CD_RJ", "CD_ES", "CD_MG", "LOJA_XEREM", "LOJA_XEREM_ES"]:
         dados = estoque_resumo.get(chave)
         qtde = dados['qtde_total'] or 0
         valor = dados['valor_total'] or 0

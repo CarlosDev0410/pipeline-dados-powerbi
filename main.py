@@ -13,34 +13,19 @@ def main():
     try:
         print("\n▶️ Etapa 1: Faturamento")
         run_etl_faturamento()
-    except Exception as e:
-        print(f"❌ Erro ao executar ETL de faturamento: {e}")
-        return
 
-    try:
-        print("\n▶️ Etapa 2: Atualização de Faturamento")
-        run_atualiza_pedido()
-    except Exception as e:
-        print(f"❌ Erro ao executar Atualização de Pedidos: {e}")
-        return
-
-    try:
-        print("\n▶️ Etapa 3: Devoluções")
+        print("\n▶️ Etapa 2: Devolução")
         run_etl_devolucao()
-    except Exception as e:
-        print(f"❌ Erro ao executar ETL de devoluções: {e}")
-        return
 
-    try:
-        print("\n▶️ Etapa 4: Estoque")
+        print("\n▶️ Etapa 3: Estoque")
         run_etl_estoque()
+
+        print("\n▶️ Etapa 4: Análise")
+        run_analise()
+
     except Exception as e:
-        print(f"❌ Erro ao executar ETL de Estoque: {e}")
-        return
+        print(f"\n❌ Erro crítico no pipeline: {e}")
 
-    print("\n✅ ETL completo finalizado com sucesso.")
-
-    run_analise()
 
 if __name__ == "__main__":
     main()

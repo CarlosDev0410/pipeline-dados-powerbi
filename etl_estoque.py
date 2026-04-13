@@ -5,11 +5,12 @@ from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 
 load_dotenv()
-data_hoje = date.today()
 
 def get_sqlalchemy_engine():
+    # Adicionado um statement_timeout de 5 minutos (300.000 ms) para proteger contra queries infinitas
     return create_engine(
-        f"postgresql+psycopg2://{os.getenv('ORIGEM_USER')}:{os.getenv('ORIGEM_PASS')}@{os.getenv('ORIGEM_HOST')}:{os.getenv('ORIGEM_PORT')}/{os.getenv('ORIGEM_DB')}"
+        f"postgresql+psycopg2://{os.getenv('ORIGEM_USER')}:{os.getenv('ORIGEM_PASS')}@{os.getenv('ORIGEM_HOST')}:{os.getenv('ORIGEM_PORT')}/{os.getenv('ORIGEM_DB')}",
+        connect_args={'options': '-c statement_timeout=300000'}
     )
 
 def get_postgres_engine_dest():
@@ -18,9 +19,18 @@ def get_postgres_engine_dest():
     )
 
 def fetch_dados_estoque():
+    print(f"   [DB] Buscando posição de estoque atual (origem)...", flush=True)
     engine = get_sqlalchemy_engine()
     query = open("sql/query_estoque.sql", encoding="utf-8").read()
     df = pd.read_sql_query(text(query), con=engine)
+    
+    # Garantir que colunas numéricas sejam tratadas como tal pelo Pandas
+    colunas_numericas = ['quantidade_disponivel', 'valor_unitario', 'valor_total']
+    for col in colunas_numericas:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+
+    print(f"   [DB] Download concluído! {len(df)} materiais em estoque.", flush=True)
     return df
 
 def insert_estoque(df, engine):
@@ -34,11 +44,12 @@ def insert_estoque(df, engine):
         conn.commit()
         
     df.to_sql("estoque", con=engine, index=False, if_exists="append", method="multi")
-    print(f"✅ {len(df)} registros de estoque inseridos (estrutura preservada).")
+    print(f"✅ {len(df)} registros de estoque atualizados no destino.")
 
 def run_etl_estoque():
-    print("🔹 Iniciando ETL de Estoque...")
+    hoje = date.today().strftime('%Y-%m-%d')
+    print(f"🔹 Iniciando ETL de Estoque (Data Ref: {hoje})...")
     engine_dest = get_postgres_engine_dest()
     df = fetch_dados_estoque()
     insert_estoque(df, engine_dest)
-    print(f"✅ ETL de estoque finalizado. {data_hoje}")
+    print(f"✅ ETL de estoque finalizado.")
