@@ -25,11 +25,6 @@ SELECT
     N.numero::VARCHAR as NOTA,
     T.nome as TRANSPORTADOR,
     COALESCE((NFPI.valorfrete / 100), 0)::numeric as FRETE,
-    CASE
-        WHEN vce_frete.VALOR ~ '^[0-9]+([,.][0-9]+)?$'
-        THEN replace(replace(vce_frete.VALOR, '.', ''), ',', '.')::numeric
-        ELSE 0
-    END as FRETE_RAW,
     vce_trafego.VALOR as VIA_TRAFEGO,
     vce_prop.VALOR as CLIENTE_PROP,
     UF.sigla as UF,
@@ -97,7 +92,7 @@ WHERE N.dtemissao >= :data_inicio
 GROUP BY
     N.dtemissao, PV.DTPEDIDOVENDA, p.nome, pvt.descricao, MG.NOME, M.IDENTIFICACAO, M.NOME, 
     NFPI.qtde, NFPI.valorunitario, NFPI.valordesconto, PE.nomefantasia, VM.valorcustomaterial, 
-    M.valorvendaminimo, n.numero, T.nome, NFPI.valorfrete, vce_frete.VALOR, vce_trafego.VALOR, 
+    M.valorvendaminimo, n.numero, T.nome, NFPI.valorfrete, vce_trafego.VALOR, 
     vce_prop.VALOR, UF.sigla, MUN.nome, E.bairro, C.NOME, F.nome, FP.nome, pp.nome, 
     vv.total_documento, c2.contribuinteicmstipo, NFP.localdestinonfe, NFPi.valoricmsdestinatario, 
     nfpi.cdnotafiscalproduto, nfpi.cdmaterial, VEND.NOME, PV.identificador, V.dtaltera;

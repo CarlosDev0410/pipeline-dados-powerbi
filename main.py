@@ -4,7 +4,6 @@ from etl_faturamento import run_etl_faturamento
 from etl_devolucao import run_etl_devolucao
 from etl_estoque import run_etl_estoque
 from analise_e_notificacao import run_analise
-from atualiza_pedido import run_atualiza_pedido
 
 
 def main():

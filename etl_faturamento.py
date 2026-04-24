@@ -38,15 +38,8 @@ def fetch_dados_faturamento(data_inicio, data_ref):
     # Normalizar nomes de colunas para minúsculas logo aqui
     df.columns = df.columns.str.lower()
 
-    # Cálculo de frete_temperare (rateado por quantidade)
-    if 'frete_raw' in df.columns and 'quantidade' in df.columns:
-        df['frete_temperare'] = df.apply(
-            lambda x: (x['frete_raw'] / x['quantidade']) if x['quantidade'] > 0 else 0, 
-            axis=1
-        )
-    
     # Garantir que colunas numéricas sejam tratadas como tal pelo Pandas
-    colunas_numericas = ['cmv', 'valor', 'valor_unitario', 'frete', 'frete_temperare', 'custo', 'outras_despesas', 'difal', 'comissao_do_canal']
+    colunas_numericas = ['cmv', 'valor', 'valor_unitario', 'frete', 'custo', 'outras_despesas', 'difal', 'comissao_do_canal']
     for col in colunas_numericas:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
@@ -65,7 +58,7 @@ def upsert_faturamento(df, engine):
     # Lista de colunas permitidas no destino (obtida via inspeção)
     cols_permitidas = [
         'dtaltera', 'data_pedido', 'valor', 'valor_unitario', 'outras_despesas', 'cmv', 
-        'custo', 'pedidos', 'qtde_vendida', 'frete', 'frete_temperare', 'difal', 
+        'custo', 'pedidos', 'qtde_vendida', 'frete', 'difal', 
         'comissao_do_canal', 'data_faturamento', 'nota', 'transportador', 'vendedor', 
         'via_trafego', 'uf', 'cidade', 'bairro', 'cliente', 'parceiro', 'grupo_material', 
         'identificacao', 'nome', 'fabricante', 'forma_pagamento', 'prazo_pagamento', 
@@ -111,14 +104,36 @@ def upsert_faturamento(df, engine):
         
     print(f"✅ {len(df)} registros de faturamento upserted com sucesso.")
     
+def get_max_venda_date(engine):
+    """Get the maximum modification date from VENDA table with appropriate filters"""
+    query = """
+        SELECT MAX(V.dtaltera)::date 
+        FROM VENDA V 
+        WHERE V.cdvendasituacao = 5 
+          AND V.cdprojeto = 67
+    """
+    with engine.connect() as conn:
+        result = conn.execute(text(query))
+        return result.scalar()
+
 def run_etl_faturamento():
     print("🔹 Iniciando ETL de faturamento (v1.3 - Somente Hoje)...")
     engine_dest = get_postgres_engine_dest()
+    engine_orig = get_sqlalchemy_engine()  # Get origin engine for VENDA query
 
     # Usa a data de hoje e janela incremental conforme o planejado
     hoje = date.today()
     data_inicio = (hoje - timedelta(days=60)).strftime('%Y-%m-%d')
-    data_ref = (hoje - timedelta(days=2)).strftime('%Y-%m-%d') # Atualiza os últimos 2 dias ou desde que parou (ex: dia 11)
+    
+    # Obter a data máxima de modificação na tabela VENDA
+    max_venda_date = get_max_venda_date(engine_orig)
+    if max_venda_date:
+        data_ref = max_venda_date.strftime('%Y-%m-%d')
+        print(f"   [INFO] Usando data_ref da VENDA: {data_ref}")
+    else:
+        # Fallback to original method if query fails
+        data_ref = (hoje - timedelta(days=2)).strftime('%Y-%m-%d')
+        print(f"   [WARN] Falha ao obter data máxima da VENDA, usando fallback: {data_ref}")
 
     df = fetch_dados_faturamento(data_inicio, data_ref)
     upsert_faturamento(df, engine_dest)

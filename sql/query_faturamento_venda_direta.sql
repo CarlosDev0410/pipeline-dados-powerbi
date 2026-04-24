@@ -24,7 +24,6 @@ SELECT
     V.cdvenda::VARCHAR as NOTA,
     T.nome as TRANSPORTADOR,
     (V.valorfrete / 100)::numeric as FRETE,
-    COALESCE(replace(vce_frete.VALOR, ',', '.'), '0')::numeric as FRETE_RAW,
     vce_trafego.VALOR as VIA_TRAFEGO,
     vce_prop.VALOR as CLIENTE_PROP,
     UF.sigla as UF,
@@ -81,6 +80,6 @@ WHERE V.dtvenda >= :data_inicio
 GROUP BY
     V.dtvenda, PV.DTPEDIDOVENDA, p.nome, pvt.descricao, MG.NOME, M.IDENTIFICACAO, M.NOME, 
     PE.nomefantasia, VM.valorcustomaterial, M.valorvendaminimo, V.cdvenda, T.nome, V.valorfrete, 
-    vce_frete.VALOR, vce_trafego.VALOR, vce_prop.VALOR, UF.sigla, MUN.nome, E.bairro, C.NOME, 
+    vce_trafego.VALOR, vce_prop.VALOR, UF.sigla, MUN.nome, E.bairro, C.NOME, 
     F.nome, FP.nome, vv.total_documento, c2.contribuinteicmstipo, pp.nome, VEND.NOME, 
     PV.identificador, V.dtaltera;
