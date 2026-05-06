@@ -212,7 +212,7 @@ def run_analise():
 
     html += f"<br><b style='color: #0009FF;'>Total em Irregularidades: {total_qtde_pend:.0f} unidades | {formatar_reais(total_valor_pend)}</b></p>"
 
-    html += "<p><em>Pipeline executado com sucesso. Version 1.20</em></p></body></html>"
+    html += "<p><em>Pipeline executado com sucesso. Versão 1.20</em></p></body></html>"
 
     print(html)
     enviar_email(html)
