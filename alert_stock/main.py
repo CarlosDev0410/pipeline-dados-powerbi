@@ -28,8 +28,16 @@ def send_email(nome, qtde):
     
     if not receiver_email:
         print("Erro: Variável EMAIL_TO não configurada ou vazia.")
-        return
+        return False
     
+    # Suporte a múltiplos e-mails separados por vírgula
+    email_list = [e.strip() for e in receiver_email.split(",") if e.strip()]
+    to_field = [{"email": email} for email in email_list]
+    
+    if not to_field:
+        print("Erro: Nenhum e-mail válido encontrado em EMAIL_TO.")
+        return False
+
     url = "https://api.brevo.com/v3/smtp/email"
     
     # Data e hora atual
@@ -69,7 +77,7 @@ def send_email(nome, qtde):
 
     payload = {
         "sender": {"email": sender_email, "name": "Alerta de Estoque"},
-        "to": [{"email": receiver_email}],
+        "to": to_field,
         "subject": subject,
         "textContent": text_message,
         "htmlContent": html_message
