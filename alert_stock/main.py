@@ -4,18 +4,31 @@ import requests
 from datetime import datetime
 from dotenv import load_dotenv
 
-# Carrega as variáveis de ambiente do arquivo .env na raiz do projeto
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '.env'))
+# Tenta carregar o .env da raiz ou do diretório atual
+load_dotenv() # Procura no diretório atual
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '.env')) # Procura um nível acima
 
 def get_query():
     query_path = os.path.join(os.path.dirname(__file__), 'sql', 'query.sql')
+    if not os.path.exists(query_path):
+        # Fallback para quando o script roda dentro da pasta alert_stock no Railway
+        query_path = os.path.join(os.path.dirname(__file__), 'query.sql')
+        
     with open(query_path, 'r', encoding='utf-8') as f:
         return f.read()
 
 def send_email(nome, qtde):
-    api_key = os.getenv("BREVO_API_KEY")
-    sender_email = os.getenv("EMAIL_FROM")
-    receiver_email = os.getenv("EMAIL_TO")
+    api_key = os.getenv("BREVO_API_KEY", "").strip()
+    sender_email = os.getenv("EMAIL_FROM", "").strip()
+    receiver_email = os.getenv("EMAIL_TO", "").strip()
+    
+    # Limpa aspas que podem vir do Railway/Config Vars
+    receiver_email = receiver_email.replace('"', '').replace("'", "")
+    sender_email = sender_email.replace('"', '').replace("'", "")
+    
+    if not receiver_email:
+        print("Erro: Variável EMAIL_TO não configurada ou vazia.")
+        return
     
     url = "https://api.brevo.com/v3/smtp/email"
     
@@ -71,18 +84,26 @@ def send_email(nome, qtde):
     response = requests.post(url, json=payload, headers=headers)
     if response.status_code in [200, 201, 202]:
         print(f"E-mail enviado com sucesso para {nome} (Qtde: {qtde}, Cor: {color})")
+        return True
     else:
         print(f"Erro ao enviar e-mail: {response.status_code} - {response.text}")
+        return False
 
 def main():
     # Configurações do banco de dados (origem)
     try:
+        def get_env(var):
+            val = os.getenv(var, "")
+            if val:
+                return val.strip().replace('"', '').replace("'", "")
+            return val
+
         conn = psycopg2.connect(
-            host=os.getenv("ORIGEM_HOST"),
-            database=os.getenv("ORIGEM_DB"),
-            user=os.getenv("ORIGEM_USER"),
-            password=os.getenv("ORIGEM_PASS"),
-            port=os.getenv("ORIGEM_PORT")
+            host=get_env("ORIGEM_HOST"),
+            database=get_env("ORIGEM_DB"),
+            user=get_env("ORIGEM_USER"),
+            password=get_env("ORIGEM_PASS"),
+            port=get_env("ORIGEM_PORT")
         )
         cur = conn.cursor()
         
@@ -99,8 +120,11 @@ def main():
             nome = row[0]
             qtde = row[1]
             
-            # Chama a função de envio de e-mail
-            send_email(nome, qtde)
+            # Chama a função de envio de e-mail e interrompe se houver erro
+            sucesso = send_email(nome, qtde)
+            if not sucesso:
+                print("Interrompendo execução devido a erro no envio de e-mail.")
+                break
 
         cur.close()
         conn.close()
