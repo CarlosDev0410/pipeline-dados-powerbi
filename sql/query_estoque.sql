@@ -1,7 +1,6 @@
 SELECT
     vgm.identificacao AS identificador,
     l.nome AS local_armazenagem,
-    vgm.identificacao AS identificador,
     vgm.nome AS material,
     F.nome AS fabricante,
     mg.nome AS grupo_material,
