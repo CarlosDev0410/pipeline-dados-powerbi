@@ -4,7 +4,9 @@ from datetime import date, timedelta
 from sqlalchemy import create_engine, text, Numeric, Integer
 from dotenv import load_dotenv
 
+# Carrega o .env do diretório atual ou da raiz do projeto (um nível acima)
 load_dotenv()
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 def get_sqlalchemy_engine():
     # Adicionado um statement_timeout de 5 minutos (300.000 ms) para proteger contra queries infinitas
@@ -24,12 +26,14 @@ def fetch_dados_faturamento(data_inicio, data_ref):
     
     # 1. Carregar Notas Fiscais
     print("      -> Buscando Notas Fiscais...", flush=True)
-    query_nf = open("sql/query_faturamento_nf.sql", encoding="utf-8").read()
+    sql_path_nf = os.path.join(os.path.dirname(__file__), "sql", "query_faturamento_nf.sql")
+    query_nf = open(sql_path_nf, encoding="utf-8").read()
     df_nf = pd.read_sql_query(text(query_nf), con=engine, params={"data_inicio": data_inicio, "data_ref": data_ref})
     
     # 2. Carregar Vendas Diretas
     print("      -> Buscando Vendas Diretas...", flush=True)
-    query_vd = open("sql/query_faturamento_venda_direta.sql", encoding="utf-8").read()
+    sql_path_vd = os.path.join(os.path.dirname(__file__), "sql", "query_faturamento_venda_direta.sql")
+    query_vd = open(sql_path_vd, encoding="utf-8").read()
     df_vd = pd.read_sql_query(text(query_vd), con=engine, params={"data_inicio": data_inicio, "data_ref": data_ref})
     
     # Unir

@@ -4,7 +4,9 @@ from datetime import date
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 
+# Carrega o .env do diretório atual ou da raiz do projeto (um nível acima)
 load_dotenv()
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 def get_sqlalchemy_engine():
     # Adicionado um statement_timeout de 5 minutos (300.000 ms) para proteger contra queries infinitas
@@ -21,7 +23,8 @@ def get_postgres_engine_dest():
 def fetch_dados_estoque():
     print(f"   [DB] Buscando posição de estoque atual (origem)...", flush=True)
     engine = get_sqlalchemy_engine()
-    query = open("sql/query_estoque.sql", encoding="utf-8").read()
+    sql_path = os.path.join(os.path.dirname(__file__), "sql", "query_estoque.sql")
+    query = open(sql_path, encoding="utf-8").read()
     df = pd.read_sql_query(text(query), con=engine)
     
     # Garantir que colunas numéricas sejam tratadas como tal pelo Pandas

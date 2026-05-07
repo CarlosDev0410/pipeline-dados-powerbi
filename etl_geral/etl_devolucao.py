@@ -4,7 +4,9 @@ from datetime import date, timedelta
 from sqlalchemy import create_engine, text, Numeric, Integer
 from dotenv import load_dotenv
 
+# Carrega o .env do diretório atual ou da raiz do projeto (um nível acima)
 load_dotenv()
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 def get_sqlalchemy_engine():
     # Adicionado um statement_timeout de 5 minutos (300.000 ms) para proteger contra queries infinitas
@@ -24,12 +26,14 @@ def fetch_dados_devolucao(data_hoje):
     
     # 1. Parte 1
     print("      -> Buscando Parte 1...", flush=True)
-    query_p1 = open("sql/query_devolucao_p1.sql", encoding="utf-8").read()
+    sql_path_p1 = os.path.join(os.path.dirname(__file__), "sql", "query_devolucao_p1.sql")
+    query_p1 = open(sql_path_p1, encoding="utf-8").read()
     df1 = pd.read_sql_query(text(query_p1), con=engine, params={"dataref": data_hoje})
     
     # 2. Parte 2
     print("      -> Buscando Parte 2...", flush=True)
-    query_p2 = open("sql/query_devolucao_p2.sql", encoding="utf-8").read()
+    sql_path_p2 = os.path.join(os.path.dirname(__file__), "sql", "query_devolucao_p2.sql")
+    query_p2 = open(sql_path_p2, encoding="utf-8").read()
     df2 = pd.read_sql_query(text(query_p2), con=engine, params={"dataref": data_hoje})
     
     # Unir

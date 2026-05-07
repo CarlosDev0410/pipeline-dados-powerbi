@@ -5,7 +5,9 @@ from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 
 # Carrega as configurações do arquivo .env.local
-load_dotenv(".env.local")
+# Carrega as configurações do arquivo .env. Procura localmente e na raiz.
+load_dotenv()
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 # Configura a data limite para 2 dias atrás
 data_limite = date.today() - timedelta(days=2)
@@ -25,7 +27,7 @@ def get_postgres_engine_dest():
 def fetch_dados_pedidos():
     """Extrai os dados de pedidos da origem usando a query SQL."""
     engine = get_sqlalchemy_engine()
-    query_path = "sql/query_order.sql"
+    query_path = os.path.join(os.path.dirname(__file__), "sql", "query_order.sql")
     
     if not os.path.exists(query_path):
         raise FileNotFoundError(f"Arquivo de query não encontrado: {query_path}")
