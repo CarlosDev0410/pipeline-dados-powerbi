@@ -53,7 +53,12 @@ def send_email(results):
     # Cores por Local
     cores_locais = {
         "CD RJ - JD OLIMPO": "#1e88e5", # Azul
-        "CD ES - MERCOCAMP": "#43a047"  # Verde
+        "CD ES - MERCOCAMP": "#43a047",  # Verde
+        "CD MG - ORMIFRIO": "#72350E", # Marron
+        "CD ES - JD OLIMPO": "#595959", # Cinza
+        "LOJA XERÉM - CD RJ": "#FF8400", # Laranja
+        "LOJA XERÉM - CD ES": "#FFFE00", # Amarelo
+        
     }
     cor_padrao = "#555555"
 
