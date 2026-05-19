@@ -10,7 +10,7 @@ left join empresa e on
 	e.cdpessoa = vgm.cdempresa 
 where
  	vgm.cdmaterial in (23006, 15185, 24846, 24847, 19807)
- 	and vgm.cdlocalarmazenagem in (265, 34)
+ 	and vgm.cdlocalarmazenagem in (265, 34, 67, 397, 506, 507)
 group by 
 	vgm.nome, l.nome
 
